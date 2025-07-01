@@ -1,0 +1,53 @@
+component sim_workpiece_quad "Virtuell Workpiece Quader for Probing Simulation";
+
+description
+"""
+After tripping home switch, travel in opposite direction is
+required (amount set by the hysteresis pin).
+A pin (index-enable) is provided for use when
+\\fB[JOINT_n]HOME_USE_INDEX\\fR is specified to reset
+the I/O pin \\fBjoint.N.index-enable\\fR.
+""";
+pin in float cur_pos_x "Current x-position (typically: joint.n.motor-pos-fb)";
+pin in float cur_pos_y "Current y-position (typically: joint.n.motor-pos-fb)";
+pin in float cur_pos_z "Current z-position (typically: joint.n.motor-pos-fb)";
+
+pin in float wp_x_pos = 0 "left X-Position Workpiece is placed";
+pin in float wp_x_width = 10 "Width of Workpiece in x direction";
+
+pin in float wp_y_pos = 0 "left Y-Position Workpiece is placed";
+pin in float wp_y_width = 10 "Width of Workpiece in y direction";
+
+pin in float wp_z_pos = 0 "lower Z-Position Workpiece is placed";
+pin in float wp_z_width = 10 "Width of Workpiece in z direction";
+
+pin in float tool_offset_z = 10 "Length of tool/touch probe in spindle";
+pin in float tool_diameter = 2 "Tool Diameter (halui.tool.diameter/#5410)";
+
+pin out bit  tool_probe_on_no "Tool Probe Signal on - Normal Open";
+pin out bit  tool_probe_on_nc "Tool Probe Signal on - Normal Closed";
+
+
+function _ fp;
+license "GPL";
+;;
+
+#include <float.h>
+FUNCTION(_) {
+    bool pin_value=false;
+    hal_float_t tool_radius=tool_diameter/2.;
+
+    if (cur_pos_z <= wp_z_pos + wp_z_width + tool_offset_z){
+		if ((cur_pos_x  <= wp_x_pos + wp_x_width + tool_radius) &&
+       (cur_pos_x  + tool_radius >= wp_x_pos ) &&
+	   (cur_pos_y   <= wp_y_pos + wp_y_width + tool_radius) &&
+	   (cur_pos_y  + tool_radius >= wp_y_pos) ) {
+            pin_value = true;
+		}
+	 }
+
+	 tool_probe_on_nc = !pin_value;
+	 tool_probe_on_no = pin_value;
+
+    return;
+}
