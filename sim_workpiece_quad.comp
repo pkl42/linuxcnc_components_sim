@@ -29,6 +29,7 @@ pin out bit  tool_probe_on_nc "Tool Probe Signal on - Normal Closed";
 
 
 function _ fp;
+author "Peter Ludwig";
 license "GPL";
 ;;
 
