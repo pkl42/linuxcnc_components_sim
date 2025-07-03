@@ -7,10 +7,12 @@
 #include "hal_helpers.h"
 
 MODULE_AUTHOR("Peter Ludwig");
-MODULE_DESCRIPTION("Software stub for Mesa HM2_ETH I/O card driver, enabling off-target simulation in LinuxCNC");
+MODULE_DESCRIPTION("Mock for Mesa HM2_ETH I/O card driver, enabling testing and simulation without requiring real mesa card hardware.");
 MODULE_LICENSE("GPL");
 
 static int comp_id;
+
+static char *version="0.8";
 
 // simulating configuration of mesa card
 static char *config = "";
@@ -20,9 +22,10 @@ static char *daughter_card = "";
 RTAPI_MP_STRING(board, "Board Type string");
 
 static int num_stepgens = 5;
-static int num_encoders = 3;
+static int num_encoders = 1;
 static int num_pwmgens = 0;
 static char sserial_ports[64] = "";  // optional capture
+static int sserial_first_digit = -1;  // Default to invalid
 
 // Parameters (allocated with hal_malloc)
 static hal_u32_t *watchdog_timeout_ns;
@@ -49,16 +52,23 @@ static hal_s32_t **enc_counts;
 #define NUM_GPIO 16
 static hal_bit_t **gpio_in, **gpio_in_sim, **gpio_out;
 
-// Smart Serial Pins
-#define NUM_SSERIAL_IO_IN 32
-#define NUM_SSERIAL_IO_OUT 16
-#define NUM_SSERIAL_ANALOG_IN 4
+// Daughter Card Pins
+
+static int  dcard_num_io_in=32;
+static int  dcard_num_io_out=16;
+static int  dcard_num_analog_in=4;
+static int  dcard_num_encoders=2;
+
 static hal_float_t **ss_analogin, **ss_analogin_sim;
 
 static hal_bit_t **ss_input, **ss_input_sim, **ss_input_not, **ss_output;
 static hal_bit_t **spinena,**spindir;
 static hal_float_t **field_voltage, **field_voltage_sim;
 static hal_float_t **spinout;
+
+// Daughter Card Encodres
+static hal_float_t **dcard_enc_pos;
+static hal_s32_t **dcard_enc_counts;
 
 // Smart Serial Parameters
 static hal_float_t *spinout_minlim,*spinout_maxlim,*spinout_scalemax;
@@ -85,6 +95,10 @@ static void parse_config_string(const char *config_str) {
         } else if (strncmp(token, "sserial_port_0=", 15) == 0) {
             strncpy(sserial_ports, token + 15, sizeof(sserial_ports) - 1);
             sserial_ports[sizeof(sserial_ports) - 1] = '\0';
+			// Extract first digit
+            if (isdigit(sserial_ports[0])) {
+                sserial_first_digit = sserial_ports[0] - '0';
+            }
         }
 
         token = strtok(NULL, " ");
@@ -137,10 +151,12 @@ static void read(void *arg, long period_nsec)
 
     }
 
+	/* TODO: how to simulate
     for (int i = 0; i < num_encoders; i++) {
         *enc_pos[i] += 0.01;
         *enc_counts[i] = (int)(*enc_pos[i] * 1000);
     }
+	*/
 
     for (int i = 0; i < NUM_GPIO; i++) {
         *gpio_out[i] = *gpio_in[i];
@@ -149,17 +165,25 @@ static void read(void *arg, long period_nsec)
 
 	// 7i76e Daughter Card 7i76
 
-    for (int i = 0; i < NUM_SSERIAL_IO_IN; i++) {
+    for (int i = 0; i < dcard_num_io_in; i++) {
         *ss_input[i] = *ss_input_sim[i];
     }
 
-    for (int i = 0; i < NUM_SSERIAL_IO_IN; i++) {
+    for (int i = 0; i < dcard_num_io_in; i++) {
         *ss_input_not[i] = !*ss_input[i];
     }
 
-    for (int i = 0; i < NUM_SSERIAL_ANALOG_IN; i++) {
+    for (int i = 0; i < dcard_num_analog_in; i++) {
         *ss_analogin[i] = *ss_analogin_sim[i];
     }
+
+	/* TODO: how to simulate
+    for (int i = 0; i < dcard_num_encoders; i++) {
+        *dcard_enc_pos[i] += 0.01;
+        *dcard_enc_counts[i] = (int)(*enc_pos[i] * 1000);
+    }
+	*/
+
 
 	**field_voltage= **field_voltage_sim;
 
@@ -175,6 +199,7 @@ int rtapi_app_main(void)
 	int counter=0;
 	to_lowercase(board);
 	rtapi_print("Board string: %s\n", board);
+	rtapi_print("hm2_eth_mock Version: %s\n", version);
 	// TODO: The supported boards are: 7I76E, 7I80DB, 7I80HD, 7I92, 7I93, 7I94, 7I95, 7I96, 7I96S, 7I97, 7I98
 	// currently only supported: 7I76E
 
@@ -184,7 +209,7 @@ int rtapi_app_main(void)
 
 	parse_config_string(config);
 
-    comp_id = hal_init("hm2_eth_stub");
+    comp_id = hal_init("hm2_eth_mock");
     if (comp_id < 0) return comp_id;
 
     // Parameters (hal_malloc + hal_param_*_new)
@@ -256,18 +281,43 @@ int rtapi_app_main(void)
 	// 2. 			The first instance of a daughtercard plugged into that connector.
 	// .input-01	This is the actual I/O pin, in this case, input #1.
 
+	// base on the first digit of the sserial_port_0 value the card can be configured in different ways 
+	// -> see manual 7I76E/7I76ED ETHERNET STEP/DIR PLUS I/O DAUGHTERCARD
+	if (sserial_first_digit == 0){
+		dcard_num_io_out=16;
+		dcard_num_analog_in=0;
+		dcard_num_encoders=0;
+	}
+	else if (sserial_first_digit == 1)
+	{
+		dcard_num_io_out=16;
+		dcard_num_analog_in=4;
+		dcard_num_encoders=0;
+
+	}
+	else if (sserial_first_digit == 2)
+	{
+		dcard_num_io_out=16;
+		dcard_num_analog_in=4;
+		dcard_num_encoders=2;
+
+	}
 
 	snprintf(card_identifier, sizeof(card_identifier), "hm2_%s.%01d.%s.%01d.%01d", board, counter, daughter_card,daughter_card_connector,daughter_card_instance);
-	HAL_PIN_FLOAT_ARRAY(ss_analogin, NUM_SSERIAL_ANALOG_IN,card_identifier, ".analogin%01d", HAL_OUT);
-	HAL_PIN_FLOAT_ARRAY(ss_analogin_sim, NUM_SSERIAL_ANALOG_IN,card_identifier, ".analogin%01d-sim", HAL_IN);
+	HAL_PIN_FLOAT_ARRAY(ss_analogin, dcard_num_analog_in,card_identifier, ".analogin%01d", HAL_OUT);
+	HAL_PIN_FLOAT_ARRAY(ss_analogin_sim, dcard_num_analog_in,card_identifier, ".analogin%01d-sim", HAL_IN);
+
+	// Encoders
+	HAL_PIN_FLOAT_ARRAY(dcard_enc_pos, dcard_num_encoders, card_identifier,".enc%01d.position", HAL_OUT);
+	HAL_PIN_S32_ARRAY(dcard_enc_counts, dcard_num_encoders, card_identifier,".enc%01d.counts", HAL_OUT);
 
 	HAL_PIN_FLOAT(field_voltage, card_identifier,".fieldvoltage", HAL_OUT);
     HAL_PIN_FLOAT(field_voltage_sim,card_identifier, ".fieldvoltage-sim", HAL_IN);
 	
-	HAL_PIN_BIT_ARRAY(ss_input, NUM_SSERIAL_IO_IN, card_identifier, ".input-%02d", HAL_OUT);
-	HAL_PIN_BIT_ARRAY(ss_input_sim, NUM_SSERIAL_IO_IN, card_identifier, ".input-%02d-sim", HAL_IN);
-	HAL_PIN_BIT_ARRAY(ss_input_not, NUM_SSERIAL_IO_IN, card_identifier, ".input-%02d-not", HAL_OUT);
-	HAL_PIN_BIT_ARRAY(ss_output, NUM_SSERIAL_IO_OUT, card_identifier, ".output-%02d", HAL_IN);
+	HAL_PIN_BIT_ARRAY(ss_input, dcard_num_io_in, card_identifier, ".input-%02d", HAL_OUT);
+	HAL_PIN_BIT_ARRAY(ss_input_sim, dcard_num_io_in, card_identifier, ".input-%02d-sim", HAL_IN);
+	HAL_PIN_BIT_ARRAY(ss_input_not, dcard_num_io_in, card_identifier, ".input-%02d-not", HAL_OUT);
+	HAL_PIN_BIT_ARRAY(ss_output, dcard_num_io_out, card_identifier, ".output-%02d", HAL_IN);
 
 	HAL_PIN_BIT(spinena, card_identifier,".spinena", HAL_IN);
 	HAL_PIN_BIT(spindir, card_identifier,".spindir", HAL_IN);

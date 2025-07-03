@@ -12,21 +12,22 @@ pin in float cur_pos_x "Current x-position (typically: joint.n.motor-pos-fb)";
 pin in float cur_pos_y "Current y-position (typically: joint.n.motor-pos-fb)";
 pin in float cur_pos_z "Current z-position (typically: joint.n.motor-pos-fb)";
 
-pin in float wp_x_pos = 0 "left X-Position Workpiece is placed";
-pin in float wp_x_width = 10 "Width of Workpiece in x direction";
+param rw float wp_x_pos = 0. "left X-Position Workpiece is placed";
+param rw float wp_x_width = 10. "Width of Workpiece in x direction";
 
-pin in float wp_y_pos = 0 "left Y-Position Workpiece is placed";
-pin in float wp_y_width = 10 "Width of Workpiece in y direction";
+param rw float wp_y_pos = 0. "left Y-Position Workpiece is placed";
+param rw float wp_y_width = 10. "Width of Workpiece in y direction";
 
-pin in float wp_z_pos = 0 "lower Z-Position Workpiece is placed";
-pin in float wp_z_width = 10 "Width of Workpiece in z direction";
+param rw float wp_z_pos = 0. "lower Z-Position Workpiece is placed";
+param rw float wp_z_width = 10. "Width of Workpiece in z direction";
 
-pin in float tool_offset_z = 10 "Length of tool/touch probe in spindle";
-pin in float tool_diameter = 2 "Tool Diameter (halui.tool.diameter/#5410)";
+pin in float tool_offset_z = 10. "Length of tool/touch probe in spindle";
+pin in float tool_diameter = 2. "Tool Diameter (halui.tool.diameter/#5410)";
 
-pin out bit  tool_probe_on_no "Tool Probe Signal on - Normal Open";
-pin out bit  tool_probe_on_nc "Tool Probe Signal on - Normal Closed";
+pin out bit  cmd_pos_inside "current position within the workpiece";
+pin out bit  cmd_pos_inside_inv "current position within the workpiece - inverted";
 
+param r float version = 1.0 "Version of this component";
 
 function _ fp;
 author "Peter Ludwig";
@@ -34,21 +35,21 @@ license "GPL";
 ;;
 
 #include <float.h>
+
 FUNCTION(_) {
-    bool pin_value=false;
-    hal_float_t tool_radius=tool_diameter/2.;
+    float tool_radius=tool_diameter/2.;
+	cmd_pos_inside = false;
 
     if (cur_pos_z <= wp_z_pos + wp_z_width + tool_offset_z){
 		if ((cur_pos_x  <= wp_x_pos + wp_x_width + tool_radius) &&
        (cur_pos_x  + tool_radius >= wp_x_pos ) &&
 	   (cur_pos_y   <= wp_y_pos + wp_y_width + tool_radius) &&
 	   (cur_pos_y  + tool_radius >= wp_y_pos) ) {
-            pin_value = true;
+            cmd_pos_inside = true;
 		}
 	 }
 
-	 tool_probe_on_nc = !pin_value;
-	 tool_probe_on_no = pin_value;
+	 cmd_pos_inside_inv = !cmd_pos_inside;
 
-    return;
+     return;
 }
