@@ -1,37 +1,27 @@
-component sim_fork_light_barrier "Simulates a fork light barrrier e.g. for Tool Probing";
+component sim_fork_light_barrier "Simulates a fork light barrier e.g. for Tool Probing";
 
 description
 """
-After tripping home switch, travel in opposite direction is
-required to release (amount set by the hysteresis pin).
-A pin (index-enable) is provided for use when
-\\fB[JOINT-n]HOME-USE-INDEX\\fR is specified to reset
-the I/O pin \\fBjoint.N.index-enable\\fR.
+Used for simulating contactless tool probing with a light barrier. 
 """;
 pin in float cur_pos_x "Current x-position (typically: joint.n.motor-pos-fb)";
 pin in float cur_pos_y "Current y-position (typically: joint.n.motor-pos-fb)";
 pin in float cur_pos_z "Current z-position (typically: joint.n.motor-pos-fb)";
 
-pin in float light_barrier_x_pos = 1. "X-Position where Tool Probe Signal turns on";
-pin in float light_barrier_width = 40. "Width of Fork Light Barrier";
+param rw float light_barrier_x_pos = 1. "X-Position where Tool Probe Signal turns on";
+param rw float light_barrier_width = 40. "Width of Fork Light Barrier";
 
-pin in float light_barrier_y_pos = 1. "Y-Position where Tool Probe Signal turns on";
-pin in float tool_diameter = 2 "Tool Diameter (halui.tool.diameter)";
+param rw float light_barrier_y_pos = 1. "Y-Position where Tool Probe Signal turns on";
+param rw float tool_diameter = 2 "Tool Diameter (halui.tool.diameter)";
 
-pin in float light_barrier_z_pos = 1. "Z-Position where Tool Probe Signal turns on";
-pin in float tool_length = 20. "Length of tool in spindle";
-pin in float min_detectable_object = 0.05 "Smallest detectable Object of Light Barrier";
+param rw float light_barrier_z_pos = 1. "Z-Position where Tool Probe Signal turns on";
+param rw float tool_length = 20. "Length of tool in spindle";
+param rw float min_detectable_object = 0.05 "Smallest detectable Object of Light Barrier";
 
 pin out bit  tool_probe_on_no "Tool Probe Signal on - Normal Open";
 pin out bit  tool_probe_on_nc "Tool Probe Signal on - Normal Closed";
 
 pin in s32 orientation=0 "Orientation: 0 laser light detecting moves on x-Axis, 1 on y-Axis";
-
-pin io  bit  index_enable "typ: connect to joint.N.index-enable";
-pin in float index_delay_ms = 10 "delay in msec to reset index-enable";
-
-variable int    old_index_enable;
-variable double index_timer_ms;
 
 function _ fp;
 author "Peter Ludwig";
@@ -65,19 +55,5 @@ FUNCTION(_) {
 	 tool_probe_on_nc = !pin_value;
 	 tool_probe_on_no = pin_value;
 
-
-    // provision to reset I/O pin index-enable
-    if (index_timer_ms > 0) {
-       index_timer_ms -= period * 1e-6; // period is in nS
-       if (index_timer_ms <= 0) {
-           index_timer_ms = 0;
-           index_enable = 0;
-           return;
-       }
-    }
-    if (index_enable && !old_index_enable) {
-        index_timer_ms = index_delay_ms;
-    }
-    old_index_enable = index_enable;
     return;
 }
