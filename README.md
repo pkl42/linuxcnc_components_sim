@@ -83,6 +83,8 @@ if {$::mesa_card_type eq "real"} {
 } else {
     loadrt hm2_eth_mock board=[lindex $::HOSTMOT2(BOARD) 0] config=[lindex $::HOSTMOT2(CONFIG) 0]
 }
+
+
 ```
 
 Post-load tasks (done in `hm2_eth_post.hal`):
@@ -90,15 +92,21 @@ Post-load tasks (done in `hm2_eth_post.hal`):
 ```hal
 addf hm2_7i76e.0.read  servo-thread
 addf hm2_7i76e.0.write servo-thread
+
+setp hm2_7i76e.0.watchdog.timeout_ns       5000000
+setp hm2_7i76e.0.dpll.01.timer-us          -50
+setp hm2_7i76e.0.stepgen.timer-number      1
 ```
 
-> **Note**: The `write` function must be added at the end of the HAL load sequence to avoid launch errors.
+> **Note**: The `write` function must be added at the end of the HAL load sequence to avoid launch errors. This is the main reason  
+for the hm2_eth_post.hal.
 
 ---
 
 ## 🧩 Simulated Wiring and Components
 
-HAL files like `x_axis.hal` are reused for simulation. At the end of each axis file, a `.tcl` is sourced only when in simulation mode:
+HAL files like `x_axis.hal` are used for simulation and real world.  
+At the end of each hal file, a `.tcl` is sourced, :
 
 ```hal
 net both-home-x => joint.0.home-sw-in
@@ -108,6 +116,7 @@ net both-home-x => joint.0.pos-lim-sw-in
 source AxisJoints/x_axis_sim.tcl
 ```
 
+And this file contains the additions needed for simulation
 Example simulation logic from `x_axis_sim.tcl`:
 
 ```tcl
@@ -151,7 +160,7 @@ sudo apt install linuxcnc-dev
 
 ```bash
 cd ~/linuxcnc
-git clone <this-repo-url> components_sim
+git clone https://github.com/pkl42/linuxcnc_components_sim.git components_sim
 ```
 
 3. **Update Your `.bashrc`**
@@ -174,6 +183,10 @@ sudo halcompile --install sim_workpiece_quad.comp
 sudo halcompile --install sim_workpiece_ring.comp
 ```
 
+or just run
+~~~bash
+sh compile.sh
+~~~
 ---
 
 ## 🧪 Testing the Mock Driver
@@ -191,6 +204,9 @@ show pin hm2_7i76e.0.*
 ---
 
 ## 📦 Simulating Other Devices
+
+As your wiring might look different (different input pins for the signals) you might  
+adapt these examples to your machine.
 
 ### Limit & Home Switches
 
@@ -219,6 +235,9 @@ if {$::mesa_card_type eq "mock"} {
 
 ### Spindle Acknowledge Signal
 
+As the mock driver do not care about spindle acceleration, therefor once the spinena signal is send,  
+the spindle on speed will be acknoledged.
+
 ```tcl
 if {$::mesa_card_type eq "mock"} {
     loadrt not names=spindle-ena-inv
@@ -230,6 +249,8 @@ if {$::mesa_card_type eq "mock"} {
 ```
 
 ### Touch Probe
+
+With the and-probe-signal-sim component up to two virtual objects, which triggers the touch probe can be added.
 
 ```tcl
 if {$::mesa_card_type eq "mock"} {
@@ -269,6 +290,33 @@ setp sim-wp-ring.wp-radius-inside 20.0
 setp sim-wp-ring.wp-radius-outside 40.0
 setp sim-wp-ring.wp-z-height 10.0
 ```
+
+Overall all virtual objects will follow the same pattern. You can define the geometry, like  
+- wp-radius-inside 
+- wp-radius-outside
+- wp-z-height
+
+and the "virtual" machine coordinate where this component is placed  
+- wp-x-pos
+- wp-y-pos
+- wp-z-pos
+
+and the current tool parameters:
+- tool-offset-z
+- tool-diameter
+
+the origin of the ring is in the center and lower z-level.
+
+The current machine position is sourced into the component    
+- cur-pos-x
+- cur-pos-y
+- cur-pos-z
+
+and the output pins 
+- cmd_pos_inside
+- cmd_pos_inside_inv
+
+detects whether the given machine position is within the objects or not.
 
 ---
 
