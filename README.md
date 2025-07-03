@@ -10,6 +10,9 @@ This is especially useful for:
 - Developing or debugging HAL logic
 - Teaching or learning LinuxCNC without access to physical machines
 
+The mock of the 7i76e currently supports the configuration of the card with parameters:  
+e.g. "num_encoders=1 num_pwmgens=1 num_stepgens=3 sserial_port_0=20xxxx".  
+
 ---
 
 ## 🧰 Hardware Simulated
@@ -18,7 +21,7 @@ This project currently includes simulation support for:
 - Mesa 7i76e card
 - Touch probe
 - Laser fork light barrier
-- Tool length and diameter measurement (ring and quad workpieces)
+- Simple virtual objects (ring and quad workpieces)
 - Limit and home switches
 - Emergency stop
 - Spindle ready signal
