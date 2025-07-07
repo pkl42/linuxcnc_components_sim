@@ -1,0 +1,6 @@
+loadrt threads name1=servo-thread period1=1000000
+loadrt hm2_eth_mock board=7i76e config="num_encoders=1 num_pwmgens=1 num_stepgens=3 sserial_port_0=20xxxx"
+addf hm2_7i76e.0.read  servo-thread
+addf hm2_7i76e.0.write servo-thread
+start
+show pin hm2_7i76e.0.*
