@@ -5,6 +5,7 @@ In some situations, it’s useful to simulate hardware rather than testing direc
 The goal is to reuse your actual machine configuration and detect hardware availability at runtime. If hardware is not detected, the system loads a simulation.
 
 This is especially useful for:
+
 - Testing configurations without physical hardware
 - Running LinuxCNC on a virtual machine
 - Developing or debugging HAL logic
@@ -13,11 +14,19 @@ This is especially useful for:
 The mock of the 7i76e currently supports the configuration of the card with parameters:  
 e.g. "num_encoders=1 num_pwmgens=1 num_stepgens=3 sserial_port_0=20xxxx".  
 
+Here a list of currently mocked and stubbed Pins and Parameters:  
+[Overview Pins and Parameters](OverviewMockedStubbedPinAndParameters.pdf)  
+
+> **Note**: Let me know if you need Pins and/or Parameter stubbed/mocked to be able to  
+simulate your machine.  
+Stubbed Pins/Parameters: These connectors exists for wiring but no additional logic.  
+Mocked Pins/Parameters: These connectors are contains simulated logic
 ---
 
 ## 🧰 Hardware Simulated
 
 This project currently includes simulation support for:
+
 - Mesa 7i76e card
 - Touch probe
 - Laser fork light barrier
@@ -170,7 +179,7 @@ git clone https://github.com/pkl42/linuxcnc_components_sim.git components_sim
 
 ```bash
 if [ -d ~/linuxcnc/components_sim ]; then
-	export PATH="$PATH:~/linuxcnc/components_sim"
+ export PATH="$PATH:~/linuxcnc/components_sim"
 fi
 ```
 
@@ -187,9 +196,11 @@ sudo halcompile --install sim_workpiece_ring.comp
 ```
 
 or just run
+
 ~~~bash
 sh compile.sh
 ~~~
+
 ---
 
 ## 🧪 Testing the Mock Driver
@@ -295,27 +306,32 @@ setp sim-wp-ring.wp-z-height 10.0
 ```
 
 Overall all virtual objects will follow the same pattern. You can define the geometry, like  
-- wp-radius-inside 
+
+- wp-radius-inside
 - wp-radius-outside
 - wp-z-height
 
 and the "virtual" machine coordinate where this component is placed  
+
 - wp-x-pos
 - wp-y-pos
 - wp-z-pos
 
 and the current tool parameters:
+
 - tool-offset-z
 - tool-diameter
 
 the origin of the ring is in the center and lower z-level.
 
-The current machine position is sourced into the component    
+The current machine position is sourced into the component
+
 - cur-pos-x
 - cur-pos-y
 - cur-pos-z
 
-and the output pins 
+and the output pins
+
 - cmd_pos_inside
 - cmd_pos_inside_inv
 
