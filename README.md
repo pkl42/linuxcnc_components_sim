@@ -1,4 +1,4 @@
-# 🧪 Components for Simulating Hardware in LinuxCNC
+# Components for Simulating Hardware in LinuxCNC
 
 In some situations, it’s useful to simulate hardware rather than testing directly on a real machine. This repository provides components and configuration examples to create a realistic simulation environment in **LinuxCNC**, using your existing `.ini` and `.hal` files.
 
@@ -23,7 +23,7 @@ Stubbed Pins/Parameters: These connectors exists for wiring but no additional lo
 Mocked Pins/Parameters: These connectors are contains simulated logic
 ---
 
-## 🧰 Hardware Simulated
+## Hardware Simulated
 
 This project currently includes simulation support for:
 
@@ -37,7 +37,7 @@ This project currently includes simulation support for:
 
 ---
 
-## 🧠 Idea and Workflow
+## Idea and Workflow
 
 - Use the same `.ini` and `.hal` files for both real and simulated machines.
 - At startup, a Tcl script checks whether the hardware is reachable (via `ping`).
@@ -46,7 +46,7 @@ This project currently includes simulation support for:
 
 ---
 
-## 🔧 Example `.ini` Configuration
+## Example `.ini` Configuration
 
 ```ini
 [HOSTMOT2]
@@ -69,7 +69,7 @@ HALFILE = Mesacard/hm2_eth_post.hal
 
 ---
 
-## 🔄 Detecting Real vs. Mocked Hardware
+## Detecting Real vs. Mocked Hardware
 
 `Mesacard/hm2_eth.tcl` checks the Mesa board’s IP. If `ping` fails, it loads a mock component instead:
 
@@ -115,7 +115,7 @@ for the hm2_eth_post.hal.
 
 ---
 
-## 🧩 Simulated Wiring and Components
+## Simulated Wiring and Components
 
 HAL files like `x_axis.hal` are used for simulation and real world.  
 At the end of each hal file, a `.tcl` is sourced, :
@@ -203,7 +203,7 @@ sh compile.sh
 
 ---
 
-## 🧪 Testing the Mock Driver
+## Testing the Mock Driver
 
 ```bash
 halrun
@@ -217,7 +217,7 @@ show pin hm2_7i76e.0.*
 
 ---
 
-## 📦 Simulating Other Devices
+## Simulating Other Devices
 
 As your wiring might look different (different input pins for the signals) you might  
 adapt these examples to your machine.
@@ -282,7 +282,7 @@ if {$::mesa_card_type eq "mock"} {
 
 ---
 
-## 🧱 Ring Block Simulation
+## Ring Block Simulation
 
 `RingBlock_sim.tcl` sets up a virtual ring-shaped object:
 
@@ -339,7 +339,7 @@ detects whether the given machine position is within the objects or not.
 
 ---
 
-## 💡 Final Notes
+## Final Notes
 
 - This simulation is designed to **mimic real hardware**, not replace full machine automation.
 - Manual steps like GUI confirmation during tool changes are still required.
@@ -347,12 +347,12 @@ detects whether the given machine position is within the objects or not.
 
 ---
 
-## 📸 Pin Mapping Example
+## Pin Mapping Example
 
 ![Pinout of mocked hardware](pin_out_7i76e_mock.png)
 
 ---
 
-## ✅ License
+## License
 
 Open-source under [GPL License](LICENSE) — Feel free to adapt and extend!
