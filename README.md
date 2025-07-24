@@ -160,7 +160,7 @@ hm2_7i76e.0.7i76.0.0.input-04-sim   <= IN (simulation input)
 
 ---
 
-## 🛠️ Building the Components
+## Building the Components
 
 1. **Install Dev Dependencies**
 
